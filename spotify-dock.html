@@ -199,7 +199,7 @@
    Get one free at https://developer.spotify.com/dashboard
    Add THIS EXACT PAGE'S URL as a Redirect URI in that app's settings.
    ====================================================================== */
-const CLIENT_ID = "3a29f0ca7d9944698053718cfa71edb3";
+const CLIENT_ID = 3a29f0ca7d9944698053718cfa71edb3;
 const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = "user-read-currently-playing user-read-playback-state";
 
@@ -317,12 +317,21 @@ async function pollNowPlaying(){
     if(res.status === 204){
       document.getElementById('dock').classList.add('idle');
       document.getElementById('idle-msg').classList.add('show');
+      document.getElementById('status').textContent = 'Connected — Spotify says nothing is playing (204)';
       return;
     }
-    if(!res.ok){ return; }
+    if(!res.ok){
+      const body = await res.text();
+      document.getElementById('status').textContent = `API error ${res.status}: ${body.slice(0,150)}`;
+      return;
+    }
 
     const data = await res.json();
-    if(!data || !data.item) return;
+    if(!data || !data.item){
+      document.getElementById('status').textContent = 'Got a response but no track item (podcast or unsupported content?)';
+      return;
+    }
+    document.getElementById('status').textContent = '';
 
     document.getElementById('dock').classList.remove('idle');
     document.getElementById('idle-msg').classList.remove('show');
@@ -344,7 +353,9 @@ async function pollNowPlaying(){
     const led = document.getElementById('led');
     led.classList.toggle('paused', !data.is_playing);
 
-  }catch(e){ /* silent — retry on next poll */ }
+  }catch(e){
+    document.getElementById('status').textContent = 'Network/JS error: ' + e.message;
+  }
 }
 
 /* ---------------- Boot ---------------- */
